@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compshop Cafe System - Upgraded</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Orbitron', 'sans-serif'],
+                    },
+                    colors: {
+                        neon: {
+                            cyan: '#06b6d4',
+                            purple: '#a855f7',
+                            green: '#10b981',
+                            pink: '#ec4899',
+                            dark: '#0f172a',
+                            darker: '#020617',
+                            card: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #020617; color: #f8fafc; }
+        
+        .neon-text-cyan { text-shadow: 0 0 5px #06b6d4, 0 0 10px #06b6d4; }
+        .neon-text-purple { text-shadow: 0 0 5px #a855f7, 0 0 10px #a855f7; }
+        
+        .neon-border-cyan { border: 1px solid #06b6d4; box-shadow: 0 0 10px rgba(6, 182, 212, 0.5), inset 0 0 5px rgba(6, 182, 212, 0.3); }
+        .neon-border-purple { border: 1px solid #a855f7; box-shadow: 0 0 10px rgba(168, 85, 247, 0.5), inset 0 0 5px rgba(168, 85, 247, 0.3); }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+
+        /* Hide scrollbar for header */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .hide { display: none !important; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        
+        .modal-overlay { background-color: rgba(2, 6, 23, 0.85); backdrop-filter: blur(4px); }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 8px; padding: 8px 16px;
+            border-radius: 8px; font-weight: 600; color: #94a3b8; transition: all 0.2s; cursor: pointer;
+        }
+        .nav-item:hover { color: #f8fafc; background-color: rgba(255,255,255,0.05); }
+        .nav-item.active { color: #06b6d4; background-color: rgba(6, 182, 212, 0.1); }
+        
+        .nav-indicator { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; display: none; box-shadow: 0 0 8px #10b981; }
+        .nav-indicator.active { display: block; }
+        
+        #toast-container { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow: hidden; justify-content: flex-end; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="w-full bg-[#0b101e] border-b border-gray-800 p-3 sticky top-0 z-50">
+        <div class="w-full px-2 lg:px-6 mx-auto flex flex-row justify-between items-center gap-6 overflow-x-auto whitespace-nowrap scrollbar-hide">
+            
+            <div class="flex items-center gap-3 shrink-0">
+                <div class="w-10 h-10 rounded-lg bg-[#0f172a] border border-[#3b82f6] flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.3)]">
+                    <span class="text-orange-500 font-bold text-xl">⚡</span>
+                </div>
+                <div>
+                    <h1 class="font-display text-xl font-bold tracking-widest text-white leading-tight">CYBERSPHERE</h1>
+                    <p class="text-[9px] text-[#06b6d4] font-mono tracking-[0.2em] font-bold">35 SLOTS GAMING LOUNGE</p>
+                </div>
+            </div>
+
+            <div id="main-nav" class="hide flex flex-row items-center gap-2 shrink-0">
+                <button onclick="switchTab('view-home')" id="nav-home" class="nav-item active"><span>🏠</span> Home</button>
+                <button onclick="switchTab('view-booking')" id="nav-booking" class="nav-item"><span>🖥️</span> Book PC</button>
+                <button onclick="switchTab('view-food')" id="nav-food" class="nav-item"><span>🍔</span> Snack & Bar</button>
+                <button onclick="switchTab('view-live')" id="nav-live" class="nav-item relative pr-6">
+                    <span>🕒</span> Live Session <div id="live-indicator" class="nav-indicator absolute top-2 right-2"></div>
+                </button>
+                <button onclick="switchTab('view-admin')" id="nav-admin" class="nav-item hide text-purple-400 hover:text-purple-300"><span>🛡️</span> Owner Portal</button>
+                <!-- NEW SYSTEM MGMT TAB -->
+                <button onclick="switchTab('view-sysmgmt')" id="nav-sysmgmt" class="nav-item hide text-orange-400 hover:text-orange-300"><span>⚙️</span> System Mgmt</button>
+            </div>
+
+            <div id="user-controls" class="hide flex items-center gap-4 shrink-0">
+                <div class="text-right bg-gray-900 border border-gray-800 p-2 rounded-lg">
+                    <div class="text-[10px] text-gray-500 uppercase tracking-widest mb-1 border-b border-gray-800 pb-1">Time Wallet Balances</div>
+                    <div class="flex gap-3 text-xs font-mono font-bold">
+                        <span class="text-neon-cyan">REG: <span id="wallet-reg">0h</span></span>
+                        <span class="text-neon-purple">VIP: <span id="wallet-vip">0h</span></span>
+                        <span class="text-neon-pink">STR: <span id="wallet-str">0h</span></span>
+                    </div>
+                </div>
+                <button id="btn-logout" class="text-sm px-4 py-2 rounded bg-gray-800 text-gray-400 hover:text-white transition-all">Logout</button>
+            </div>
+
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col items-center p-4 sm:p-8 w-full max-w-[1400px] mx-auto">
+        
+        <!-- LOGIN VIEW -->
+        <section id="view-auth" class="w-full max-w-md mt-10 tab-section animate-fade-in">
+            <div class="bg-neon-dark p-8 rounded-xl neon-border-cyan flex flex-col gap-6 relative overflow-hidden">
+                <h2 class="text-3xl font-display text-center mb-4">WELCOME GAMER</h2>
+                <form id="auth-form" onsubmit="event.preventDefault();" class="flex flex-col gap-4 relative z-10">
+                    <div>
+                        <label class="text-xs text-neon-cyan uppercase tracking-wider mb-1 block">Email Address</label>
+                        <input type="email" id="auth-email" required class="w-full bg-neon-darker border border-gray-700 rounded p-3 text-white focus:outline-none focus:border-neon-cyan">
+                    </div>
+                    <div>
+                        <label class="text-xs text-neon-cyan uppercase tracking-wider mb-1 block">Password</label>
+                        <input type="password" id="auth-password" required class="w-full bg-neon-darker border border-gray-700 rounded p-3 text-white focus:outline-none focus:border-neon-cyan">
+                    </div>
+                    <div class="flex flex-col gap-3 mt-4">
+                        <button type="button" id="btn-login" class="w-full bg-neon-cyan/20 text-neon-cyan border border-neon-cyan py-3 rounded font-bold uppercase tracking-widest hover:bg-neon-cyan/40">Sign in</button>
+                        <button type="button" onclick="switchTab('view-register')" class="w-full bg-transparent text-gray-400 border border-gray-700 py-3 rounded font-bold uppercase tracking-widest hover:border-neon-purple hover:text-neon-purple transition-all">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- REGISTER VIEW (Separate Window) -->
+        <section id="view-register" class="w-full max-w-md mt-10 tab-section hide animate-fade-in">
+            <div class="bg-neon-dark p-8 rounded-xl neon-border-purple flex flex-col gap-6 relative overflow-hidden shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+                <h2 class="text-3xl font-display text-center mb-4 text-neon-purple">NEW RECRUIT</h2>
+                <form id="reg-form" onsubmit="event.preventDefault();" class="flex flex-col gap-4 relative z-10">
+                    <div>
+                        <label class="text-xs text-neon-purple uppercase tracking-wider mb-1 block">Email Address</label>
+                        <input type="email" id="reg-email" required class="w-full bg-neon-darker border border-gray-700 rounded p-3 text-white focus:outline-none focus:border-neon-purple">
+                    </div>
+                    <div>
+                        <label class="text-xs text-neon-purple uppercase tracking-wider mb-1 block">Password (Min. 6 chars)</label>
+                        <input type="password" id="reg-password" required class="w-full bg-neon-darker border border-gray-700 rounded p-3 text-white focus:outline-none focus:border-neon-purple">
+                    </div>
+                    <div class="flex flex-col gap-3 mt-4">
+                        <button type="button" id="btn-register-submit" class="w-full bg-neon-purple/20 text-neon-purple border border-neon-purple py-3 rounded font-bold uppercase tracking-widest hover:bg-neon-purple/40">Register Account</button>
+                        <button type="button" onclick="switchTab('view-auth')" class="w-full bg-transparent text-gray-400 border border-gray-700 py-3 rounded font-bold uppercase tracking-widest hover:border-neon-cyan hover:text-neon-cyan transition-all">Back to Sign In</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- DASHBOARD / HOME VIEW -->
+        <section id="view-home" class="w-full hide tab-section animate-fade-in mt-4">
+            <div class="w-full bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#020617] rounded-3xl p-10 border border-gray-800 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500"></div>
+                
+                <div class="flex flex-col lg:flex-row gap-10 items-center justify-between relative z-10">
+                    <div class="flex-1">
+                        <span class="bg-cyan-900/50 text-cyan-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest border border-cyan-800 mb-6 inline-block">35 High-End Stations • Open 24/7</span>
+                        <h1 class="text-5xl lg:text-7xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 leading-tight mb-4 drop-shadow-lg">
+                            NEXT-GEN <br>
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">35-SLOT GAMING</span> <br>
+                            ARENA
+                        </h1>
+                        <p class="text-gray-400 text-lg mb-8 max-w-xl leading-relaxed">
+                            Features 20 Regular Gaming PCs, 10 VIP Esports Tournament Rigs, and 5 Private Streamer Pods with food served directly to your desk while gaming.
+                        </p>
+                        <div class="flex gap-4">
+                            <button onclick="switchTab('view-booking')" class="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-8 py-4 rounded-xl font-bold uppercase tracking-wider hover:shadow-[0_0_20px_rgba(6,182,212,0.6)] transition-all flex items-center gap-2">
+                                <span>🎮</span> Book PC Station
+                            </button>
+                            <button onclick="switchTab('view-food')" class="bg-gray-800/80 text-gray-300 border border-gray-700 px-8 py-4 rounded-xl font-bold uppercase tracking-wider hover:bg-gray-700 hover:text-white transition-all flex items-center gap-2">
+                                <span>🍔</span> Order Food & Snacks
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="w-full lg:w-2/5 grid grid-cols-2 gap-4">
+                        <div class="bg-gray-900/80 border border-gray-700 p-6 rounded-2xl text-center backdrop-blur-sm shadow-xl">
+                            <div class="text-3xl mb-2 text-cyan-400">🖥️</div>
+                            <h3 class="text-2xl font-black text-white mb-1">20 Slots</h3>
+                            <p class="text-xs text-gray-500 uppercase">Regular PC Zone (₱25/hr)</p>
+                        </div>
+                        <div class="bg-gray-900/80 border border-purple-900/50 p-6 rounded-2xl text-center backdrop-blur-sm shadow-xl">
+                            <div class="text-3xl mb-2 text-purple-400">🏆</div>
+                            <h3 class="text-2xl font-black text-white mb-1">10 Slots</h3>
+                            <p class="text-xs text-gray-500 uppercase">VIP Esports Zone (₱40/hr)</p>
+                        </div>
+                        <div class="bg-gray-900/80 border border-pink-900/50 p-6 rounded-2xl text-center backdrop-blur-sm shadow-xl">
+                            <div class="text-3xl mb-2 text-pink-400">🎥</div>
+                            <h3 class="text-2xl font-black text-white mb-1">5 Slots</h3>
+                            <p class="text-xs text-gray-500 uppercase">Streamer Pods (₱60/hr)</p>
+                        </div>
+                        <div class="bg-gray-900/80 border border-green-900/50 p-6 rounded-2xl text-center backdrop-blur-sm shadow-xl">
+                            <div class="text-3xl mb-2 text-green-400">🍔</div>
+                            <h3 class="text-2xl font-black text-white mb-1">24/7</h3>
+                            <p class="text-xs text-gray-500 uppercase">In-Seat Cafe Delivery</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BOOKING VIEW (Separated Tiers) -->
+        <section id="view-booking" class="w-full hide tab-section animate-fade-in">
+            <div class="flex justify-between items-end mb-4 border-b border-gray-800 pb-4">
+                <h3 class="text-xl font-display font-bold text-white">Select a Station</h3>
+            </div>
+            
+            <!-- Tier 1: Regular -->
+            <div class="mb-8">
+                <h4 class="text-neon-cyan font-bold tracking-widest uppercase mb-3 flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-neon-cyan"></div> Regular Tier (₱25/hr)
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="grid-regular"></div>
+            </div>
+
+            <!-- Tier 2: VIP -->
+            <div class="mb-8">
+                <h4 class="text-neon-purple font-bold tracking-widest uppercase mb-3 flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-neon-purple"></div> VIP Tier (₱40/hr)
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="grid-vip"></div>
+            </div>
+
+            <!-- Tier 3: Streamer -->
+            <div class="mb-8">
+                <h4 class="text-neon-pink font-bold tracking-widest uppercase mb-3 flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-neon-pink"></div> Streamer Tier (₱60/hr)
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="grid-streamer"></div>
+            </div>
+        </section>
+
+        <!-- FOOD VIEW (Fully Responive Scroll Redesign) -->
+        <section id="view-food" class="w-full hide tab-section animate-fade-in">
+            <div class="bg-neon-dark rounded-xl p-6 neon-border-purple flex flex-col w-full h-[85vh] min-h-[650px]">
+                
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-gray-800 pb-4 gap-4 shrink-0">
+                    <div>
+                        <h3 class="text-2xl font-display font-bold text-white flex items-center gap-2">
+                            <span class="text-neon-pink text-3xl">🍔</span> In-Seat Cafe & Snack Bar
+                        </h3>
+                        <p class="text-sm text-gray-400 mt-1">Order snacks and meals delivered straight to your assigned station.</p>
+                    </div>
+                </div>
+                
+                <!-- Dynamic Height Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
+                    
+                    <!-- Left: Menu List (Scrollable) -->
+                    <div class="lg:col-span-8 overflow-y-auto pr-2 grid grid-cols-1 sm:grid-cols-2 gap-4 content-start" id="food-menu-grid">
+                        
+                        <!-- Static Variant Items (Hardcoded) -->
+                        <!-- Pancit Canton Variant -->
+                        <div class="bg-neon-card p-4 rounded-xl border border-gray-700 flex flex-col justify-between">
+                            <div class="flex items-start gap-3 mb-3">
+                                <div class="bg-gray-800 p-2 rounded text-xl">🍜</div>
+                                <div>
+                                    <div class="text-[10px] text-neon-pink font-bold uppercase tracking-wider mb-1">Meals</div>
+                                    <h4 class="font-bold text-white leading-tight">Pancit Canton</h4>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 items-end">
+                                <select id="variant-canton" class="w-full bg-gray-800 text-xs text-white p-2 rounded border border-gray-600 focus:border-neon-pink focus:outline-none">
+                                    <option value="Original" data-price="45">Original - ₱45</option>
+                                    <option value="Kalamansi" data-price="45">Kalamansi - ₱45</option>
+                                    <option value="Sweet & Spicy" data-price="50">Sweet & Spicy - ₱50</option>
+                                    <option value="Chilimansi" data-price="50">Chilimansi - ₱50</option>
+                                </select>
+                                <button onclick="addVariantToCart('Pancit Canton', 'variant-canton')" class="bg-neon-pink/10 text-neon-pink border border-neon-pink/50 px-4 py-2 rounded text-sm font-bold hover:bg-neon-pink hover:text-white transition-all">+ Add</button>
+                            </div>
+                        </div>
+
+                        <!-- Fries Variant -->
+                        <div class="bg-neon-card p-4 rounded-xl border border-gray-700 flex flex-col justify-between">
+                            <div class="flex items-start gap-3 mb-3">
+                                <div class="bg-gray-800 p-2 rounded text-xl">🍟</div>
+                                <div>
+                                    <div class="text-[10px] text-neon-pink font-bold uppercase tracking-wider mb-1">Snacks</div>
+                                    <h4 class="font-bold text-white leading-tight">Loaded Cheese Fries</h4>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 items-end">
+                                <select id="variant-fries" class="w-full bg-gray-800 text-xs text-white p-2 rounded border border-gray-600 focus:border-neon-pink focus:outline-none">
+                                    <option value="Regular" data-price="50">Regular - ₱50</option>
+                                    <option value="Large" data-price="75">Large - ₱75</option>
+                                    <option value="Gamer Bucket" data-price="120">Gamer Bucket - ₱120</option>
+                                </select>
+                                <button onclick="addVariantToCart('Cheese Fries', 'variant-fries')" class="bg-neon-pink/10 text-neon-pink border border-neon-pink/50 px-4 py-2 rounded text-sm font-bold hover:bg-neon-pink hover:text-white transition-all">+ Add</button>
+                            </div>
+                        </div>
+
+                        <!-- Drinks Variant -->
+                        <div class="bg-neon-card p-4 rounded-xl border border-gray-700 flex flex-col justify-between">
+                            <div class="flex items-start gap-3 mb-3">
+                                <div class="bg-gray-800 p-2 rounded text-xl">⚡</div>
+                                <div>
+                                    <div class="text-[10px] text-neon-pink font-bold uppercase tracking-wider mb-1">Drinks</div>
+                                    <h4 class="font-bold text-white leading-tight">Energy Drinks</h4>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 items-end">
+                                <select id="variant-energy" class="w-full bg-gray-800 text-xs text-white p-2 rounded border border-gray-600 focus:border-neon-pink focus:outline-none">
+                                    <option value="Mountain Dew" data-price="35">Mountain Dew - ₱35</option>
+                                    <option value="Cobra" data-price="25">Cobra - ₱25</option>
+                                    <option value="Red Bull" data-price="85">Red Bull - ₱85</option>
+                                </select>
+                                <button onclick="addVariantToCart('Energy Drink', 'variant-energy')" class="bg-neon-pink/10 text-neon-pink border border-neon-pink/50 px-4 py-2 rounded text-sm font-bold hover:bg-neon-pink hover:text-white transition-all">+ Add</button>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Items Container (Allows Remove/Add functionality) -->
+                        <div id="dynamic-food-list" class="contents"></div>
+                        
+                    </div>
+
+                    <!-- Right Sidebar: True Flex Column for Cart & Orders -->
+                    <div class="lg:col-span-4 flex flex-col gap-4 h-full min-h-0">
+                        
+                        <!-- Cart Container (Flex-1 allows shrinking/growing correctly) -->
+                        <div class="bg-neon-card rounded-xl p-5 border border-gray-700 flex flex-col flex-1 min-h-0">
+                            
+                            <!-- Cart Header (Shrink-0 prevents it from squishing) -->
+                            <div class="flex justify-between items-center border-b border-gray-700 pb-3 mb-3 shrink-0">
+                                <h4 class="text-lg font-bold text-white flex items-center gap-2">🛒 Seat Order</h4>
+                                <button onclick="clearCart()" class="text-sm text-red-400 hover:text-red-300 transition-colors">Clear</button>
+                            </div>
+                            
+                            <!-- Cart Items List (The ONLY part that scrolls) -->
+                            <div id="cart-items" class="flex-1 overflow-y-auto flex flex-col gap-2 min-h-0 pr-2">
+                                <div class="text-sm text-gray-500 text-center mt-10">Cart is empty.</div>
+                            </div>
+                            
+                            <!-- Cart Footer/Checkout Form (Shrink-0 keeps the button ALWAYS visible) -->
+                            <div class="border-t border-gray-700 pt-3 mt-3 shrink-0 flex flex-col gap-3">
+                                
+                                <!-- Side-by-Side Inputs to save vertical space -->
+                                <div class="flex gap-3">
+                                    <div class="w-1/2">
+                                        <label class="text-[11px] text-gray-400 block mb-1 uppercase tracking-wider">Payment</label>
+                                        <select id="food-payment-method" class="w-full bg-neon-darker border border-gray-600 rounded p-2 text-sm text-white focus:outline-none focus:border-neon-pink">
+                                            <option value="Cash">Cash to Attendant</option>
+                                            <option value="GCash">GCash</option>
+                                            <option value="Maya">Maya</option>
+                                        </select>
+                                    </div>
+                                    <div class="w-1/2">
+                                        <label class="text-[11px] text-gray-400 block mb-1 uppercase tracking-wider">Deliver To</label>
+                                        <select id="food-station-select" class="w-full bg-neon-darker border border-gray-600 rounded p-2 text-sm text-white focus:outline-none focus:border-neon-pink">
+                                            <option value="">Select Station...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center bg-gray-800/50 p-3 rounded-lg">
+                                    <span class="text-gray-300 text-sm font-bold">Total:</span>
+                                    <span id="cart-total" class="font-bold text-neon-pink text-xl font-mono">₱0.00</span>
+                                </div>
+                                
+                                <button id="btn-checkout" class="w-full bg-gradient-to-r from-neon-pink to-purple-600 text-white py-3 rounded-lg font-bold uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(236,72,153,0.4)]">
+                                    Place Snack Order
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Active Orders Tracker (Fixed height at bottom) -->
+                        <div class="bg-gray-900 rounded-xl p-4 border border-gray-700 h-[220px] shrink-0 flex flex-col">
+                            <h4 class="text-sm font-bold text-gray-300 border-b border-gray-700 pb-2 mb-3 shrink-0">📡 My Active Orders</h4>
+                            <div id="customer-orders-list" class="overflow-y-auto flex-1 flex flex-col gap-2 text-sm min-h-0 pr-1">
+                                <div class="text-gray-600 text-center text-xs mt-4">No active food orders.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LIVE SESSION VIEW -->
+        <section id="view-live" class="w-full max-w-3xl hide tab-section animate-fade-in mt-4">
+            <div id="live-empty-state" class="text-center py-20 bg-neon-dark rounded-2xl border border-gray-800">
+                <span class="text-4xl block mb-4">💤</span>
+                <h3 class="text-xl font-bold text-gray-400">No Active Session</h3>
+                <p class="text-sm text-gray-500 mt-2">Go to the Booking tab to reserve a Rig.</p>
+                <button onclick="switchTab('view-booking')" class="mt-6 bg-neon-cyan/20 text-neon-cyan border border-neon-cyan px-6 py-2 rounded font-bold">Book a PC</button>
+            </div>
+
+            <div id="live-active-state" class="hide bg-neon-dark rounded-2xl p-8 border border-neon-green shadow-[0_0_30px_rgba(16,185,129,0.15)] flex flex-col items-center text-center">
+                <div class="w-full flex justify-between items-start mb-6">
+                    <div class="text-left">
+                        <div class="text-neon-green font-bold text-xs uppercase tracking-widest mb-1">Live Session</div>
+                        <h2 id="live-pc-name" class="text-4xl font-display font-bold">REG-00</h2>
+                    </div>
+                    <div class="bg-neon-darker border border-gray-700 px-4 py-2 rounded-full text-sm">
+                        <span class="text-gray-400">Gamer: </span><span id="live-gamer-tag" class="text-neon-cyan font-mono font-bold"></span>
+                    </div>
+                </div>
+
+                <div class="my-8">
+                    <p class="text-gray-400 text-xs uppercase tracking-widest mb-2">Remaining Gaming Time</p>
+                    <div id="live-countdown" class="text-7xl font-display font-bold text-neon-cyan tracking-wider" style="text-shadow: 0 0 20px rgba(6,182,212,0.5);">00:00:00</div>
+                </div>
+
+                <div class="w-full bg-neon-darker rounded-xl p-4 border border-gray-800 flex justify-between items-center mb-6 text-sm">
+                    <div class="text-left">
+                        <span class="text-gray-500 block">Total Booked Time:</span>
+                        <span id="live-total-duration" class="font-bold text-white"></span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-gray-500 block">Rig Tier:</span>
+                        <span id="live-tier-display" class="font-bold uppercase"></span>
+                    </div>
+                </div>
+
+                <div class="w-full flex flex-col sm:flex-row gap-4">
+                    <button id="btn-pause-time" class="w-full bg-yellow-500/20 text-yellow-400 border border-yellow-500 px-6 py-4 rounded-xl font-bold uppercase tracking-wider hover:bg-yellow-500 hover:text-white transition-all shadow-[0_0_15px_rgba(234,179,8,0.3)]">
+                        ⏸️ Pause Session & Save Time
+                    </button>
+                    <button id="btn-end-session" class="w-full bg-red-600/20 text-red-500 border border-red-600 px-6 py-4 rounded-xl font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+                        End Session & Save Time
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- OWNER PORTAL VIEW -->
+        <section id="view-admin" class="w-full hide tab-section animate-fade-in flex flex-col gap-8">
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full">
+                <!-- Bookings Table -->
+                <div class="bg-neon-dark rounded-xl p-6 neon-border-cyan overflow-hidden flex flex-col h-[600px]">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2 border-b border-gray-800 pb-3 text-white">Active Bookings</h3>
+                    <div class="overflow-y-auto flex-grow pr-2">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs text-gray-400 uppercase bg-neon-darker/50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-3">User/Rig</th>
+                                    <th class="px-4 py-3">Payment</th>
+                                    <th class="px-4 py-3">Ends At</th>
+                                    <th class="px-4 py-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-bookings-body" class="divide-y divide-gray-800 text-gray-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Orders Table -->
+                <div class="bg-neon-dark rounded-xl p-6 neon-border-purple overflow-hidden flex flex-col h-[600px]">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2 border-b border-gray-800 pb-3 text-white">Food Orders Management</h3>
+                    <div class="overflow-y-auto flex-grow pr-2">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs text-gray-400 uppercase bg-neon-darker/50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-3">Order Info</th>
+                                    <th class="px-4 py-3">Status/Payment</th>
+                                    <th class="px-4 py-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-orders-body" class="divide-y divide-gray-800 text-gray-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SYSTEM MGMT VIEW (NEW DEDICATED INVENTORY INTERFACE) -->
+        <section id="view-sysmgmt" class="w-full hide tab-section animate-fade-in flex flex-col gap-8">
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full">
+                
+                <!-- PC Station Management -->
+                <div class="bg-[#1e293b] rounded-xl p-6 border border-gray-700 flex flex-col h-[650px]">
+                    <h3 class="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-3 flex items-center gap-2">
+                        <span>🖥️</span> Station Control Panel
+                    </h3>
+                    
+                    <!-- Add Station Form -->
+                    <form id="admin-add-pc-form" class="flex flex-col gap-3 bg-gray-900 p-4 rounded-xl border border-gray-700 mb-4 shrink-0">
+                        <div class="text-xs text-cyan-400 font-bold uppercase mb-1">Add New PC Slot</div>
+                        <div class="flex gap-2">
+                            <div class="w-1/2">
+                                <label class="text-[10px] text-gray-400 block mb-1">Station ID (e.g. REG-21)</label>
+                                <input type="text" id="add-pc-id" required class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm">
+                            </div>
+                            <div class="w-1/2">
+                                <label class="text-[10px] text-gray-400 block mb-1">Tier</label>
+                                <select id="add-pc-tier" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm">
+                                    <option value="Regular">Regular</option>
+                                    <option value="VIP">VIP</option>
+                                    <option value="Streamer">Streamer</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="w-2/3">
+                                <label class="text-[10px] text-gray-400 block mb-1">Specs Description</label>
+                                <input type="text" id="add-pc-specs" required placeholder="i5 12400F • RTX 3060" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm">
+                            </div>
+                            <div class="w-1/3">
+                                <label class="text-[10px] text-gray-400 block mb-1">Rate (₱/hr)</label>
+                                <input type="number" id="add-pc-rate" required class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm">
+                            </div>
+                        </div>
+                        <button type="submit" class="bg-cyan-600/20 text-cyan-400 border border-cyan-500/50 px-4 py-2 rounded text-sm font-bold hover:bg-cyan-500 hover:text-white transition mt-1">Deploy Station</button>
+                    </form>
+
+                    <!-- Station List / Remove -->
+                    <div class="text-xs text-gray-400 font-bold uppercase mb-2">Existing Stations (Dynamic)</div>
+                    <div class="overflow-y-auto flex-1 bg-gray-900 border border-gray-700 rounded-xl">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-[10px] text-gray-500 uppercase bg-gray-800 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2">Station</th>
+                                    <th class="px-4 py-2">Rate</th>
+                                    <th class="px-4 py-2 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-pc-list" class="divide-y divide-gray-800 text-gray-300">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Food Menu Management -->
+                <div class="bg-[#1e293b] rounded-xl p-6 border border-gray-700 flex flex-col h-[650px]">
+                    <h3 class="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-3 flex items-center gap-2">
+                        <span>🍔</span> Menu Control Panel
+                    </h3>
+                    
+                    <!-- Add Food Form -->
+                    <form id="admin-add-food-form" class="flex flex-col gap-3 bg-gray-900 p-4 rounded-xl border border-gray-700 mb-4 shrink-0">
+                        <div class="text-xs text-pink-400 font-bold uppercase mb-1">Add New Menu Item</div>
+                        <div class="flex gap-2">
+                            <div class="w-2/3">
+                                <label class="text-[10px] text-gray-400 block mb-1">Item Name</label>
+                                <input type="text" id="add-food-name" required class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm">
+                            </div>
+                            <div class="w-1/3">
+                                <label class="text-[10px] text-gray-400 block mb-1">Price (₱)</label>
+                                <input type="number" id="add-food-price" required class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-gray-400 block mb-1">Category Emoji / Icon</label>
+                            <input type="text" id="add-food-icon" placeholder="🍔" required class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm">
+                        </div>
+                        <button type="submit" class="bg-pink-600/20 text-pink-400 border border-pink-500/50 px-4 py-2 rounded text-sm font-bold hover:bg-pink-500 hover:text-white transition mt-1">Publish to Menu</button>
+                    </form>
+
+                    <!-- Food List / Remove -->
+                    <div class="text-xs text-gray-400 font-bold uppercase mb-2">Existing Standard Items (Dynamic)</div>
+                    <div class="overflow-y-auto flex-1 bg-gray-900 border border-gray-700 rounded-xl">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-[10px] text-gray-500 uppercase bg-gray-800 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2">Item</th>
+                                    <th class="px-4 py-2">Price</th>
+                                    <th class="px-4 py-2 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-food-list" class="divide-y divide-gray-800 text-gray-300">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- CHECKOUT MODAL (PC Booking) -->
+    <div id="checkout-modal" class="fixed inset-0 z-[100] hide flex items-center justify-center modal-overlay">
+        <div class="bg-[#1a1f2e] w-full max-w-sm rounded-2xl border border-gray-700 shadow-2xl p-6 relative animate-fade-in">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            
+            <h3 class="text-xl font-display font-bold text-white flex items-center gap-2 mb-4 border-b border-gray-800 pb-3">
+                <span class="text-neon-cyan">🎟</span> Session Checkout
+            </h3>
+            
+            <form id="booking-form" class="flex flex-col gap-4">
+                <div class="flex gap-4">
+                    <div class="w-1/2">
+                        <label class="text-xs text-gray-400 block mb-1">Target Station</label>
+                        <input type="text" id="modal-pc-id" disabled class="w-full bg-[#111520] border border-gray-700 rounded p-3 text-white font-bold">
+                    </div>
+                    <div class="w-1/2">
+                        <label class="text-xs text-gray-400 block mb-1">Tier / Type</label>
+                        <input type="text" id="modal-pc-type" disabled class="w-full bg-[#111520] border border-gray-700 rounded p-3 font-bold uppercase text-sm">
+                    </div>
+                    <input type="hidden" id="modal-pc-rate">
+                </div>
+                
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">Customer / Gamer Tag</label>
+                    <input type="text" id="book-gamer-tag" required placeholder="Enter tag" class="w-full bg-[#111520] border border-gray-700 rounded p-3 text-white focus:outline-none focus:border-neon-cyan">
+                </div>
+
+                <div class="flex gap-4">
+                    <div class="w-1/2">
+                        <label class="text-xs text-gray-400 block mb-1">Duration</label>
+                        <select id="book-duration" onchange="calculateModalTotal()" class="w-full bg-[#111520] border border-gray-700 rounded p-3 text-white text-sm focus:outline-none focus:border-neon-cyan">
+                            <option value="1">1 Hour</option>
+                            <option value="2">2 Hours</option>
+                            <option value="3">3 Hours</option>
+                            <option value="5">5 Hours</option>
+                            <option value="wallet" id="wallet-option" disabled>Time Wallet</option>
+                        </select>
+                    </div>
+                    <div class="w-1/2">
+                        <label class="text-xs text-gray-400 block mb-1">Payment Method</label>
+                        <select id="book-payment-method" class="w-full bg-[#111520] border border-gray-700 rounded p-3 text-white text-sm focus:outline-none focus:border-neon-cyan">
+                            <option value="Cash">Cash</option>
+                            <option value="GCash">GCash</option>
+                            <option value="Maya">Maya</option>
+                            <option value="Wallet" id="wallet-pay-opt" class="hide">Wallet</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800/40 rounded-xl p-4 mt-2 border border-gray-700">
+                    <div class="flex justify-between text-sm text-gray-400 mb-1">
+                        <span>Hourly Rate:</span>
+                        <span id="modal-rate-display" class="font-mono">₱0.00 / hr</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-gray-400 mb-3 border-b border-gray-700 pb-3">
+                        <span>Est. End Time:</span>
+                        <span id="modal-end-time" class="font-mono text-white">--:--</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-white">Total Amount:</span>
+                        <span id="modal-total-price" class="text-xl font-bold font-mono text-neon-cyan">₱0.00</span>
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-confirm-book" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-4 rounded-xl font-bold uppercase tracking-wider hover:shadow-[0_0_15px_rgba(6,182,212,0.6)] transition-all mt-2">
+                    Start Gaming Session
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Fixed Toast Spam: Max 5 toasts visible -> older ones auto-removed -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 pointer-events-none"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfwGpVSGstSfc96w2PCS-OV0QsQG5BakQ",
+            authDomain: "compshop-616f3.firebaseapp.com",
+            projectId: "compshop-616f3",
+            storageBucket: "compshop-616f3.firebasestorage.app",
+            messagingSenderId: "583710554145",
+            appId: "1:583710554145:web:f3c42a3aa7bc708bd6cb60",
+            measurementId: "G-6YYM43N7KB"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "compshop-default-app";
+
+        const bookingsPath = `artifacts/${appId}/public/data/bookings`;
+        const ordersPath = `artifacts/${appId}/public/data/orders`;
+        const usersPath = `artifacts/${appId}/public/data/users`;
+
+        // --- DYNAMIC INVENTORY STATE ---
+        let regularPCs = [];
+        let vipPCs = [];
+        let streamerPCs = [];
+        for(let i=1; i<=20; i++) regularPCs.push({id: `REG-${String(i).padStart(2,'0')}`, type: 'Regular', specs: 'i5 12400F • RTX 3060 • 144Hz', rate: 25});
+        for(let i=1; i<=10; i++) vipPCs.push({id: `VIP-${String(i).padStart(2,'0')}`, type: 'VIP', specs: 'i7 13700K • RTX 4070 • 180Hz', rate: 40});
+        for(let i=1; i<=5; i++) streamerPCs.push({id: `STR-${String(i).padStart(2,'0')}`, type: 'Streamer', specs: 'i9 14900K • RTX 4090 • 240Hz', rate: 60});
+
+        let dynamicFoodItems = [
+            { id: 'f_sisig', name: 'Sizzling Pork Sisig', price: 120.00, icon: '🍳' },
+            { id: 'f_burger', name: 'Double Cyber Burger', price: 95.00, icon: '🍔' },
+            { id: 'f_coffee', name: 'Iced Gamer Coffee', price: 55.00, icon: '☕' }
+        ];
+
+        let currentUser = null;
+        let isAdmin = false;
+        let userWallet = { Regular: 0, VIP: 0, Streamer: 0 };
+        let cart = [];
+        let activeBooking = null; 
+        let countdownInterval = null;
+        let lastKnownActiveDocs = [];
+
+        // Subscriptions
+        let unsubscribeBookings = null;
+        let unsubscribeOrders = null;
+        let customerUnsubscribeBookings = null;
+        let customerUnsubscribeOrders = null;
+        let userDocUnsubscribe = null;
+
+        window.showToast = function(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (container.childElementCount >= 5) { container.firstElementChild.remove(); }
+            
+            const toast = document.createElement('div');
+            let colorClass = type === 'error' ? 'border-red-500 text-red-500 bg-red-500/20' : 
+                             type === 'success' ? 'border-neon-green text-neon-green bg-neon-green/20' : 
+                             'border-neon-cyan text-neon-cyan bg-neon-cyan/20';
+            toast.className = `px-4 py-3 rounded border backdrop-blur-md shadow-lg transform transition-all duration-300 translate-y-5 opacity-0 ${colorClass}`;
+            toast.innerText = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.remove('translate-y-5', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => { if(toast.parentNode) toast.remove(); }, 300);
+            }, 3000);
+        }
+
+        function msToHMS(ms) {
+            if(ms < 0) ms = 0;
+            const h = Math.floor(ms / 3600000);
+            const m = Math.floor((ms % 3600000) / 60000);
+            const s = Math.floor((ms % 60000) / 1000);
+            return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }
+        function msToHM(ms) {
+            const h = Math.floor(ms / 3600000);
+            const m = Math.floor((ms % 3600000) / 60000);
+            return `${h}h ${m}m`;
+        }
+
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-section').forEach(el => el.classList.add('hide'));
+            document.getElementById(tabId).classList.remove('hide');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            const btnId = tabId.replace('view-', 'nav-');
+            if(document.getElementById(btnId)) {
+                document.getElementById(btnId).classList.add('active');
+            }
+        };
+
+        // --- DYNAMIC FOOD RENDERING ---
+        function renderFoodMenu() {
+            const container = document.getElementById('dynamic-food-list');
+            if(!container) return;
+            container.innerHTML = dynamicFoodItems.map(f => `
+                <div class="bg-neon-card p-4 rounded-xl border border-gray-700 flex justify-between items-center h-28">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-gray-800 p-2 rounded text-xl">${f.icon}</div>
+                        <div>
+                            <div class="text-[10px] text-neon-pink font-bold uppercase tracking-wider mb-1">Item</div>
+                            <h4 class="font-bold text-white">${f.name}</h4>
+                            <p class="text-neon-cyan font-mono text-sm mt-1">₱${f.price.toFixed(2)}</p>
+                        </div>
+                    </div>
+                    <button onclick="addToCart('${f.name.replace(/'/g, "\\'")}', ${f.price})" class="bg-neon-pink/10 text-neon-pink border border-neon-pink/50 px-3 py-1.5 rounded text-sm font-bold hover:bg-neon-pink hover:text-white">+ Add</button>
+                </div>
+            `).join('');
+        }
+        // Initialize immediately
+        renderFoodMenu();
+
+        // --- CART LOGIC ---
+        window.addToCart = function(name, price) {
+            const existing = cart.find(i => i.name === name);
+            if(existing) { existing.qty++; } else { cart.push({ name, price, qty: 1 }); }
+            updateCartUI();
+            showToast(`Added: ${name}`, 'success');
+        };
+
+        window.addVariantToCart = function(baseName, selectId) {
+            const select = document.getElementById(selectId);
+            const variant = select.options[select.selectedIndex].text.split(' - ')[0]; 
+            const price = parseFloat(select.options[select.selectedIndex].dataset.price);
+            const fullName = `${baseName} (${variant})`;
+            addToCart(fullName, price);
+        };
+
+        window.removeFromCart = function(index) {
+            cart.splice(index, 1);
+            updateCartUI();
+        }
+        window.clearCart = function() {
+            cart = [];
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const container = document.getElementById('cart-items');
+            const totalEl = document.getElementById('cart-total');
+            const checkoutBtn = document.getElementById('btn-checkout');
+
+            if(cart.length === 0) {
+                container.innerHTML = '<div class="text-sm text-gray-500 text-center mt-10">Cart is empty.</div>';
+                totalEl.innerText = '₱0.00';
+                checkoutBtn.disabled = true;
+                return;
+            }
+
+            checkoutBtn.disabled = false;
+            container.innerHTML = cart.map((item, index) => `
+                <div class="flex justify-between items-center bg-[#1e293b] p-3 rounded-lg border border-gray-700 shrink-0">
+                    <div>
+                        <div class="font-bold text-sm text-white">${item.name}</div>
+                        <div class="text-xs text-gray-400">₱${item.price.toFixed(2)} × ${item.qty}</div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-neon-pink text-sm">₱${(item.price * item.qty).toFixed(2)}</span>
+                        <button onclick="removeFromCart(${index})" class="text-gray-500 hover:text-red-400 font-bold px-2 py-1">X</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            totalEl.innerText = `₱${total.toFixed(2)}`;
+        }
+
+        // --- BOOKING LOGIC ---
+        window.openCheckoutModal = function(pcId, rate, type) {
+            document.getElementById('modal-pc-id').value = pcId;
+            document.getElementById('modal-pc-rate').value = rate;
+            document.getElementById('modal-pc-type').value = type;
+            document.getElementById('book-gamer-tag').value = '';
+            
+            let color = type === 'Regular' ? 'text-neon-cyan' : type === 'VIP' ? 'text-neon-purple' : 'text-neon-pink';
+            document.getElementById('modal-pc-type').className = `w-full bg-[#111520] border border-gray-700 rounded p-3 font-bold uppercase text-sm ${color}`;
+
+            document.getElementById('checkout-modal').classList.remove('hide');
+            
+            const tierWalletMs = userWallet[type] || 0;
+            const walletOpt = document.getElementById('wallet-option');
+            
+            if (tierWalletMs > 0 && !isAdmin) {
+                const totalMinutes = Math.floor(tierWalletMs / 60000);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                walletOpt.disabled = false;
+                walletOpt.innerText = `Use Wallet (${hours}h ${minutes}m available)`;
+            } else {
+                walletOpt.disabled = true;
+                walletOpt.innerText = isAdmin ? `Wallet (Not applicable)` : `Wallet (Empty)`;
+            }
+            document.getElementById('book-duration').value = "1";
+            document.getElementById('book-payment-method').value = "Cash";
+            calculateModalTotal();
+        }
+        window.closeModal = function() { document.getElementById('checkout-modal').classList.add('hide'); }
+
+        window.calculateModalTotal = function() {
+            const rate = parseFloat(document.getElementById('modal-pc-rate').value);
+            const duration = document.getElementById('book-duration').value;
+            const type = document.getElementById('modal-pc-type').value;
+            const paymentSelect = document.getElementById('book-payment-method');
+            const walletPayOpt = document.getElementById('wallet-pay-opt');
+            
+            document.getElementById('modal-rate-display').innerText = `₱${rate.toFixed(2)} / hr`;
+            
+            let total = 0; let addMs = 0;
+
+            if (duration === 'wallet') {
+                addMs = userWallet[type] || 0;
+                walletPayOpt.classList.remove('hide');
+                paymentSelect.value = "Wallet";
+                paymentSelect.disabled = true;
+            } else {
+                addMs = parseInt(duration) * 3600000;
+                total = parseInt(duration) * rate;
+                walletPayOpt.classList.add('hide');
+                paymentSelect.disabled = false;
+                if(paymentSelect.value === "Wallet") paymentSelect.value = "Cash";
+            }
+
+            document.getElementById('modal-total-price').innerText = `₱${total.toFixed(2)}`;
+            const endTime = new Date(Date.now() + addMs);
+            document.getElementById('modal-end-time').innerText = endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function generateGridHTML(pcList, bookedMap) {
+            return pcList.map(pc => {
+                const isBooked = bookedMap[pc.id] === true;
+                let themeColor = pc.type === 'Regular' ? 'neon-cyan' : pc.type === 'VIP' ? 'neon-purple' : 'neon-pink';
+                if (isBooked) {
+                    return `
+                        <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 opacity-75 relative">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-red-500/20 text-red-500 text-[10px] font-bold px-2 py-1 rounded border border-red-500/50">IN USE</span>
+                            </div>
+                            <h3 class="text-xl font-display font-bold text-gray-400 mb-1">${pc.id}</h3>
+                            <p class="text-[10px] text-gray-600 mb-4">${pc.specs}</p>
+                            <button disabled class="w-full bg-gray-800 text-gray-500 px-4 py-1.5 rounded text-sm font-bold cursor-not-allowed">Busy</button>
+                        </div>`;
+                } else {
+                    return `
+                        <div class="bg-neon-card border border-gray-700 hover:border-${themeColor} rounded-xl p-4 transition-all hover:-translate-y-1 hover:shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-neon-green/10 text-neon-green text-[10px] font-bold px-2 py-1 rounded border border-neon-green/50">FREE</span>
+                            </div>
+                            <h3 class="text-xl font-display font-bold text-white mb-1 drop-shadow-md">${pc.id}</h3>
+                            <p class="text-[10px] text-gray-400 mb-4">${pc.specs}</p>
+                            <button onclick="openCheckoutModal('${pc.id}', ${pc.rate}, '${pc.type}')" class="w-full bg-${themeColor}/20 text-${themeColor} border border-${themeColor}/50 hover:bg-${themeColor} hover:text-white px-4 py-1.5 rounded text-sm font-bold transition-colors">Select</button>
+                        </div>`;
+                }
+            }).join('');
+        }
+
+        function renderPCGrid(activeDocs) {
+            const bookedMap = {};
+            activeDocs.forEach(d => { bookedMap[d.pcNumber] = true; });
+            
+            document.getElementById('grid-regular').innerHTML = generateGridHTML(regularPCs, bookedMap);
+            document.getElementById('grid-vip').innerHTML = generateGridHTML(vipPCs, bookedMap);
+            document.getElementById('grid-streamer').innerHTML = generateGridHTML(streamerPCs, bookedMap);
+
+            const allPCs = [...regularPCs, ...vipPCs, ...streamerPCs];
+            const foodSelect = document.getElementById('food-station-select');
+            if(foodSelect) {
+                foodSelect.innerHTML = '<option value="">Select Station...</option>' + 
+                    allPCs.map(pc => `<option value="${pc.id}">${pc.id}</option>`).join('');
+            }
+        }
+
+        document.getElementById('booking-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentUser) return;
+            if(activeBooking && !isAdmin) return showToast("You already have an active session.", "error");
+            
+            const btn = document.getElementById('btn-confirm-book');
+            btn.disabled = true; btn.innerText = 'Initializing...';
+
+            const pcId = document.getElementById('modal-pc-id').value;
+            const rate = parseFloat(document.getElementById('modal-pc-rate').value);
+            const type = document.getElementById('modal-pc-type').value;
+            const tag = document.getElementById('book-gamer-tag').value;
+            const durationOpt = document.getElementById('book-duration').value;
+            const paymentMethod = document.getElementById('book-payment-method').value;
+            
+            let addMs = 0; let cost = 0; let deductWalletMs = 0;
+
+            if (durationOpt === 'wallet') {
+                // Use the full remaining wallet balance, including partial hours/minutes.
+                addMs = userWallet[type] || 0;
+                deductWalletMs = addMs;
+                if (addMs <= 0) {
+                    showToast('Your time wallet is empty.', 'error');
+                    btn.disabled = false;
+                    btn.innerText = 'Start Gaming Session';
+                    return;
+                }
+            } else {
+                addMs = parseInt(durationOpt) * 3600000;
+                cost = parseInt(durationOpt) * rate;
+            }
+
+            const endTime = Date.now() + addMs;
+            
+            // If admin books manually and handles cash, auto mark as paid.
+            const pStatus = cost > 0 ? (isAdmin ? 'Paid' : 'Pending') : 'Paid';
+
+            try {
+                if(deductWalletMs > 0 && !isAdmin) {
+                    let newWallet = { ...userWallet };
+                    newWallet[type] -= deductWalletMs;
+                    await updateDoc(doc(db, usersPath, currentUser.uid), { timeWallet: newWallet });
+                }
+
+                await addDoc(collection(db, bookingsPath), {
+                    userId: currentUser.uid, email: currentUser.email, gamerTag: tag,
+                    pcNumber: pcId, pcType: type,
+                    startTime: Date.now(), endTime: endTime, totalAmount: cost,
+                    paymentMethod: paymentMethod, paymentStatus: pStatus,
+                    status: 'active'
+                });
+                
+                showToast('Session Started!', 'success');
+                closeModal();
+            } catch (err) { showToast(err.message, 'error'); } 
+            finally { btn.disabled = false; btn.innerText = 'Start Gaming Session'; }
+        });
+
+        // --- FOOD CHECKOUT ---
+        document.getElementById('btn-checkout').addEventListener('click', async () => {
+            if(!currentUser || cart.length === 0) return;
+            const station = document.getElementById('food-station-select').value;
+            const payMethod = document.getElementById('food-payment-method').value;
+            if(!station) return showToast('Please select your Station for delivery', 'error');
+
+            const btn = document.getElementById('btn-checkout');
+            btn.disabled = true; btn.innerText = 'Processing...';
+
+            try {
+                const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                await addDoc(collection(db, ordersPath), {
+                    userId: currentUser.uid, email: currentUser.email,
+                    station: station, items: cart, total: total,
+                    paymentMethod: payMethod, paymentStatus: 'Pending', orderStatus: 'Preparing',
+                    createdAt: Date.now()
+                });
+                showToast('Order sent to kitchen!', 'success');
+                clearCart();
+            } catch (err) { showToast(err.message, 'error'); } 
+            finally { btn.disabled = cart.length === 0; btn.innerText = 'Place Snack Order'; }
+        });
+
+        // --- SYSTEM MGMT ADMIN FUNCTIONS (ADD/REMOVE LOGIC) ---
+        function renderAdminPCList() {
+            const tbody = document.getElementById('admin-pc-list');
+            const allPCs = [...regularPCs, ...vipPCs, ...streamerPCs];
+            tbody.innerHTML = allPCs.map(pc => `
+                <tr class="hover:bg-gray-800/50 transition">
+                    <td class="px-4 py-3"><span class="font-bold text-white">${pc.id}</span> <span class="text-[9px] bg-gray-700 text-gray-300 px-1 py-0.5 rounded ml-2 uppercase">${pc.type}</span></td>
+                    <td class="px-4 py-3 font-mono text-neon-cyan">₱${pc.rate}/hr</td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="removePC('${pc.id}', '${pc.type}')" class="text-[10px] bg-red-500/10 text-red-500 border border-red-500 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition">Remove</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.removePC = function(id, type) {
+            if(type === 'Regular') {
+                const idx = regularPCs.findIndex(p => p.id === id);
+                if(idx > -1) regularPCs.splice(idx, 1);
+            } else if(type === 'VIP') {
+                const idx = vipPCs.findIndex(p => p.id === id);
+                if(idx > -1) vipPCs.splice(idx, 1);
+            } else {
+                const idx = streamerPCs.findIndex(p => p.id === id);
+                if(idx > -1) streamerPCs.splice(idx, 1);
+            }
+            renderPCGrid(lastKnownActiveDocs); // instantly update booking grid
+            renderAdminPCList();               // update sysmgmt list
+            showToast(`Removed PC Station: ${id}`, 'success');
+        }
+
+        document.getElementById('admin-add-pc-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('add-pc-id').value.toUpperCase();
+            const tier = document.getElementById('add-pc-tier').value;
+            const specs = document.getElementById('add-pc-specs').value;
+            const rate = parseFloat(document.getElementById('add-pc-rate').value);
+
+            const newPC = { id, type: tier, specs, rate };
+            if(tier === 'Regular') regularPCs.push(newPC);
+            else if(tier === 'VIP') vipPCs.push(newPC);
+            else streamerPCs.push(newPC);
+
+            renderPCGrid(lastKnownActiveDocs);
+            renderAdminPCList();
+            document.getElementById('admin-add-pc-form').reset();
+            showToast(`Deployed New Station: ${id}`, 'success');
+        });
+
+        function renderAdminFoodList() {
+            const tbody = document.getElementById('admin-food-list');
+            tbody.innerHTML = dynamicFoodItems.map(f => `
+                <tr class="hover:bg-gray-800/50 transition">
+                    <td class="px-4 py-3">${f.icon} <span class="font-bold text-white ml-2">${f.name}</span></td>
+                    <td class="px-4 py-3 font-mono text-neon-pink">₱${f.price.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="removeFood('${f.id}')" class="text-[10px] bg-red-500/10 text-red-500 border border-red-500 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition">Remove</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.removeFood = function(id) {
+            const idx = dynamicFoodItems.findIndex(f => f.id === id);
+            if(idx > -1) {
+                const removed = dynamicFoodItems.splice(idx, 1)[0];
+                renderFoodMenu();          // instantly update gamer menu grid
+                renderAdminFoodList();     // update sysmgmt list
+                showToast(`Removed Menu Item: ${removed.name}`, 'success');
+            }
+        }
+
+        document.getElementById('admin-add-food-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('add-food-name').value;
+            const price = parseFloat(document.getElementById('add-food-price').value);
+            const icon = document.getElementById('add-food-icon').value;
+            const id = 'f_' + Date.now();
+
+            dynamicFoodItems.push({ id, name, price, icon });
+            renderFoodMenu();
+            renderAdminFoodList();
+            document.getElementById('admin-add-food-form').reset();
+            showToast(`Added Menu Item: ${name}`, 'success');
+        });
+
+
+        // --- LIVE TIMER & LOGIC ---
+        function updateLiveTimer() {
+            if(!activeBooking) return;
+            const remaining = activeBooking.endTime - Date.now();
+            const el = document.getElementById('live-countdown');
+            if (remaining <= 0) {
+                el.innerText = "00:00:00"; el.classList.add('text-red-500'); el.classList.remove('text-neon-cyan');
+                if(remaining < -5000) endSessionEarly();
+            } else {
+                el.innerText = msToHMS(remaining); el.classList.remove('text-red-500'); el.classList.add('text-neon-cyan');
+            }
+        }
+
+        document.getElementById('btn-pause-time').addEventListener('click', () => { endSessionEarly(); });
+        document.getElementById('btn-end-session').addEventListener('click', () => { endSessionEarly(); });
+
+        async function endSessionEarly() {
+            if(!activeBooking) return;
+            const btn = document.getElementById('btn-pause-time');
+            const btnEnd = document.getElementById('btn-end-session');
+            btn.disabled = true; btnEnd.disabled = true; btn.innerText = "Saving & Pausing...";
+            const savedMs = Math.max(0, activeBooking.endTime - Date.now());
+
+            try {
+                if(savedMs > 60000 && !isAdmin) { 
+                    const type = activeBooking.pcType;
+                    let newWallet = { ...userWallet };
+                    newWallet[type] = (newWallet[type] || 0) + savedMs;
+                    await updateDoc(doc(db, usersPath, currentUser.uid), { timeWallet: newWallet });
+                    showToast(`Paused! Saved ${msToHM(savedMs)} to ${type} wallet!`, 'success');
+                }
+                await deleteDoc(doc(db, bookingsPath, activeBooking.id));
+                activeBooking = null; switchTab('view-booking');
+            } catch(e) { showToast('Error pausing session', 'error'); } 
+            finally { btn.disabled = false; btnEnd.disabled = false; btn.innerText = "⏸️ Pause Session & Save Time"; }
+        }
+
+        // --- CUSTOMER LISTENERS ---
+        function initCustomerListeners() {
+            if(customerUnsubscribeBookings) customerUnsubscribeBookings();
+            if(customerUnsubscribeOrders) customerUnsubscribeOrders();
+            if(userDocUnsubscribe) userDocUnsubscribe();
+            
+            customerUnsubscribeBookings = onSnapshot(collection(db, bookingsPath), (snapshot) => {
+                const activeDocs = []; let myBooking = null;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if(data.status === 'active') {
+                        data.id = doc.id; activeDocs.push(data);
+                        // Admin doesn't get bound to a single live session
+                        if(data.userId === currentUser.uid && !isAdmin) { myBooking = data; }
+                    }
+                });
+                lastKnownActiveDocs = activeDocs;
+                renderPCGrid(activeDocs);
+
+                if(myBooking) {
+                    activeBooking = myBooking;
+                    document.getElementById('live-empty-state').classList.add('hide');
+                    document.getElementById('live-active-state').classList.remove('hide');
+                    document.getElementById('live-indicator').classList.add('active'); 
+
+                    document.getElementById('live-pc-name').innerText = myBooking.pcNumber;
+                    document.getElementById('live-gamer-tag').innerText = myBooking.gamerTag;
+                    document.getElementById('live-tier-display').innerText = myBooking.pcType;
+                    
+                    let colorClass = myBooking.pcType === 'Regular' ? 'text-neon-cyan' : myBooking.pcType === 'VIP' ? 'text-neon-purple' : 'text-neon-pink';
+                    document.getElementById('live-tier-display').className = `font-bold uppercase ${colorClass}`;
+                    document.getElementById('live-total-duration').innerText = `${Math.round((myBooking.endTime - myBooking.startTime)/3600000)} Hour(s)`;
+                    
+                    if(!countdownInterval) countdownInterval = setInterval(updateLiveTimer, 1000);
+                } else {
+                    if(!isAdmin) activeBooking = null;
+                    document.getElementById('live-empty-state').classList.remove('hide');
+                    document.getElementById('live-active-state').classList.add('hide');
+                    document.getElementById('live-indicator').classList.remove('active'); 
+                    if(countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+                }
+            });
+
+            // Customer My Orders Tracking
+            customerUnsubscribeOrders = onSnapshot(collection(db, ordersPath), (snapshot) => {
+                const docs = [];
+                snapshot.forEach(d => {
+                    const o = {id: d.id, ...d.data()};
+                    if(o.userId === currentUser.uid && o.orderStatus !== 'Completed' && !isAdmin) docs.push(o);
+                });
+                docs.sort((a, b) => b.createdAt - a.createdAt);
+                
+                const list = document.getElementById('customer-orders-list');
+                list.innerHTML = docs.length ? docs.map(o => {
+                    let stColor = o.orderStatus === 'Preparing' ? 'text-orange-400' : 'text-neon-green';
+                    const itemsStr = o.items.map(i => `${i.qty}x ${i.name}`).join(', ');
+                    return `
+                    <div class="bg-gray-800 p-3 rounded border border-gray-700 flex justify-between items-center">
+                        <div>
+                            <div class="text-xs text-white font-bold mb-1">${o.station} • ₱${o.total}</div>
+                            <div class="text-[10px] text-gray-400 truncate w-32">${itemsStr}</div>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                            <span class="text-[10px] font-bold uppercase tracking-wider ${stColor} border border-current px-2 py-0.5 rounded">${o.orderStatus}</span>
+                            <span class="text-[9px] text-gray-500">${o.paymentMethod}: ${o.paymentStatus}</span>
+                        </div>
+                    </div>`;
+                }).join('') : `<div class="text-gray-600 text-center text-xs mt-4">No active food orders.</div>`;
+            });
+
+            userDocUnsubscribe = onSnapshot(doc(db, usersPath, currentUser.uid), (docSnap) => {
+                if(docSnap.exists() && docSnap.data().timeWallet) {
+                    userWallet = docSnap.data().timeWallet;
+                } else {
+                    const initWallet = { Regular: 0, VIP: 0, Streamer: 0 };
+                    setDoc(doc(db, usersPath, currentUser.uid), { timeWallet: initWallet }, {merge: true});
+                    userWallet = initWallet;
+                }
+                document.getElementById('wallet-reg').innerText = msToHM(userWallet.Regular || 0);
+                document.getElementById('wallet-vip').innerText = msToHM(userWallet.VIP || 0);
+                document.getElementById('wallet-str').innerText = msToHM(userWallet.Streamer || 0);
+            });
+        }
+
+        // --- OWNER PORTAL (ORDERS / BOOKINGS) ---
+        function initAdminListeners() {
+            if(unsubscribeBookings) unsubscribeBookings();
+            if(unsubscribeOrders) unsubscribeOrders();
+
+            // Populate initial system management UI lists
+            renderAdminPCList();
+            renderAdminFoodList();
+
+            unsubscribeBookings = onSnapshot(collection(db, bookingsPath), (snapshot) => {
+                const docs = [];
+                snapshot.forEach(d => { if(d.data().status === 'active') docs.push({id: d.id, ...d.data()}); });
+                docs.sort((a, b) => b.startTime - a.startTime); 
+                
+                const tbody = document.getElementById('admin-bookings-body');
+                tbody.innerHTML = docs.length ? docs.map(b => `
+                    <tr class="border-b border-gray-800">
+                        <td class="px-4 py-3 text-xs">
+                            <div class="font-bold text-white">${b.gamerTag}</div>
+                            <div class="text-neon-cyan font-bold">${b.pcNumber} <span class="text-[9px] text-gray-500 uppercase">${b.pcType}</span></div>
+                        </td>
+                        <td class="px-4 py-3 text-xs">
+                            <div class="text-gray-400">${b.paymentMethod}</div>
+                            ${b.paymentStatus === 'Pending' 
+                                ? `<button onclick="updateDocField('bookings', '${b.id}', 'paymentStatus', 'Paid')" class="mt-1 bg-orange-500/20 text-orange-400 border border-orange-500/50 px-2 py-0.5 rounded text-[10px] hover:bg-orange-500 hover:text-white transition-all">Mark Paid</button>`
+                                : `<span class="text-neon-green font-bold text-[10px] uppercase">Paid</span>`}
+                        </td>
+                        <td class="px-4 py-3 text-xs">${new Date(b.endTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
+                        <td class="px-4 py-3 text-right">
+                            <button onclick="adminDeleteBooking('${b.id}')" class="text-[10px] bg-red-500/10 text-red-500 border border-red-500 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-all">Force End</button>
+                        </td>
+                    </tr>
+                `).join('') : `<tr><td colspan="4" class="text-center py-4 text-gray-500">No active bookings.</td></tr>`;
+            });
+
+            unsubscribeOrders = onSnapshot(collection(db, ordersPath), (snapshot) => {
+                const docs = [];
+                snapshot.forEach(doc => { if(doc.data().orderStatus !== 'Completed') docs.push({id: doc.id, ...doc.data()})});
+                docs.sort((a, b) => b.createdAt - a.createdAt);
+
+                const tbody = document.getElementById('admin-orders-body');
+                tbody.innerHTML = docs.length ? docs.map(o => {
+                    const itemsStr = (o.items || []).map(i => `${i.qty || 1}x ${i.name || 'Unknown'}`).join('<br>');
+                    let nextStatus = o.orderStatus === 'Preparing' ? 'Delivering' : 'Completed';
+                    let btnColor = o.orderStatus === 'Preparing' ? 'neon-cyan' : 'neon-green';
+
+                    return `
+                    <tr class="border-b border-gray-800">
+                        <td class="px-4 py-3">
+                            <div class="font-bold text-neon-pink">${o.station} <span class="text-gray-400 font-mono text-xs ml-2">₱${o.total.toFixed(2)}</span></div>
+                            <div class="text-[10px] text-gray-300 mt-1">${itemsStr}</div>
+                        </td>
+                        <td class="px-4 py-3 text-xs">
+                            <div class="mb-1">${o.paymentMethod}: 
+                                ${o.paymentStatus === 'Pending' 
+                                    ? `<button onclick="updateDocField('orders', '${o.id}', 'paymentStatus', 'Paid')" class="text-orange-400 hover:text-white underline">Pending</button>` 
+                                    : `<span class="text-neon-green">Paid</span>`}
+                            </div>
+                            <span class="text-[10px] border border-gray-600 px-1.5 py-0.5 rounded text-gray-400">${o.orderStatus}</span>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <button onclick="updateDocField('orders', '${o.id}', 'orderStatus', '${nextStatus}')" class="text-[10px] bg-${btnColor}/10 text-${btnColor} border border-${btnColor}/50 px-2 py-1 rounded hover:bg-${btnColor} hover:text-white transition-all uppercase">Set ${nextStatus}</button>
+                        </td>
+                    </tr>`
+                }).join('') : `<tr><td colspan="3" class="text-center py-4 text-gray-500">No pending orders.</td></tr>`;
+            });
+        }
+        
+        window.updateDocField = async function(coll, id, field, val) {
+            try { 
+                const ref = doc(db, coll === 'bookings' ? bookingsPath : ordersPath, id);
+                await updateDoc(ref, { [field]: val });
+                showToast(`Updated to ${val}`, 'success');
+            } catch(e) { showToast(e.message, 'error'); }
+        };
+        window.adminDeleteBooking = async function(id) { try { await deleteDoc(doc(db, bookingsPath, id)); } catch(e) {} };
+
+        // --- AUTH & INIT ---
+        function handleAuthState(user) {
+            currentUser = user;
+            if (user) {
+                isAdmin = (user.email === 'admin@compshop.com');
+                document.getElementById('main-nav').classList.remove('hide');
+                document.getElementById('user-controls').classList.remove('hide');
+                document.getElementById('view-auth').classList.add('hide');
+                document.getElementById('view-register').classList.add('hide');
+
+                if (isAdmin) {
+                    document.getElementById('nav-admin').classList.remove('hide');
+                    document.getElementById('nav-sysmgmt').classList.remove('hide');
+                    initAdminListeners();
+                    initCustomerListeners();
+                    switchTab('view-home');
+                } else {
+                    document.getElementById('nav-admin').classList.add('hide');
+                    document.getElementById('nav-sysmgmt').classList.add('hide');
+                    cart = []; updateCartUI();
+                    initCustomerListeners(); 
+                    switchTab('view-home');
+                }
+            } else {
+                isAdmin = false;
+                document.getElementById('main-nav').classList.add('hide');
+                document.getElementById('user-controls').classList.add('hide');
+                switchTab('view-auth'); // Always default to Login on logout
+                
+                if(customerUnsubscribeBookings) customerUnsubscribeBookings();
+                if(customerUnsubscribeOrders) customerUnsubscribeOrders();
+                if(userDocUnsubscribe) userDocUnsubscribe();
+                if(countdownInterval) clearInterval(countdownInterval);
+            }
+        }
+
+        onAuthStateChanged(auth, handleAuthState);
+
+        // LOGIN LISTENER
+        document.getElementById('btn-login').addEventListener('click', async () => {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+            
+            if(!email || !pass) return showToast('Please enter your email and password.', 'error');
+
+            const btn = document.getElementById('btn-login'); 
+            btn.disabled = true; btn.innerText = 'Authenticating...';
+            
+            try { 
+                await signInWithEmailAndPassword(auth, email, pass); 
+                document.getElementById('auth-form').reset(); 
+            } catch (err) { 
+                showToast(err.message.replace('Firebase:', '').trim(), 'error'); 
+            } finally { 
+                btn.disabled = false; btn.innerText = 'Sign in'; 
+            }
+        });
+
+        // CREATE ACCOUNT LISTENER
+        document.getElementById('btn-register-submit').addEventListener('click', async () => {
+            const email = document.getElementById('reg-email').value; 
+            const pass = document.getElementById('reg-password').value;
+            
+            if(!email || !pass) return showToast('Please enter an email and password to register.', 'error');
+            if(pass.length < 6) return showToast('Firebase requires passwords to be at least 6 characters.', 'error');
+
+            const btn = document.getElementById('btn-register-submit'); 
+            btn.disabled = true; btn.innerText = 'Creating...';
+            
+            try { 
+                await createUserWithEmailAndPassword(auth, email, pass); 
+                document.getElementById('reg-form').reset();
+                showToast('Account successfully created!', 'success');
+            } catch (err) { 
+                let msg = err.message;
+                // Provide readable errors for common Firebase registration failures
+                if(msg.includes('email-already-in-use')) msg = 'This email is already registered. Please sign in.';
+                if(msg.includes('invalid-email')) msg = 'Please enter a valid email address.';
+                
+                showToast(msg, 'error'); 
+            } finally { 
+                btn.disabled = false; btn.innerText = 'Register Account'; 
+            }
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+    </script>
+</body>
+</html>
